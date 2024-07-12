@@ -3,7 +3,7 @@
 #include <cmath>
 #include <random>
 #include <numeric>
-#include <chrono>
+
 template<typename T1, typename T2, typename T3, typename T4, typename T5>
 class VEGASResult {
 public:
@@ -20,8 +20,6 @@ static VEGASResult<double, double, double, std::vector<std::vector<double>>, std
 Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, const std::vector<double> ub,
     int maxiter = 10, const int nbins = 1000, const int ncalls = 10000,
     double rtol = 1e-4, double atol = 1e-4, double alpha = 1.5, const int noncumulative = 10, const int adaptive=10) {
-    auto start = std::chrono:: high_resolution_clock::now();
-    
     const int ndim = lb.size();
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -148,9 +146,5 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
     for (size_t i = noncumulative; i < integrals.size(); ++i) {
         chi_squared += (integrals[i] - Itot) * (integrals[i] - Itot) / sigma_squares[i];
     }
-    auto stop = std::chrono:: high_resolution_clock::now();
-    auto duration =std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    std::cout << "Thoi gian chay ham Vegas "
-        << duration.count() << " microseconds" << std::endl;
     return VEGASResult<double, double, double, std::vector<std::vector<double>>, std::vector<std::vector<double>>>(Itot, sd, chi_squared / (iter - 2- noncumulative), x, delx);
 }
