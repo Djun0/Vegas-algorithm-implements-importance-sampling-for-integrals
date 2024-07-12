@@ -67,7 +67,6 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
         nevals += ncalls;
         integrals.push_back(integral_mc);
         sigma_squares.push_back(variance_mc);
-        //tinh chỉnh noncumulative lần
         if (iter <= adaptive) {
             std::vector<std::vector<double>> d(nbins, std::vector<double>(ndim, 0.0));
             double ni = static_cast<double>(ncalls) / nbins;
