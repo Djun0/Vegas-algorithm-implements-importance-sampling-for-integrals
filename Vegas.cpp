@@ -19,7 +19,9 @@ public:
 static VEGASResult<double, double, double, std::vector<std::vector<double>>, std::vector<std::vector<double>>>
 Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, const std::vector<double> ub,
     int maxiter = 10, const int nbins = 1000, const int ncalls = 10000,
-    double rtol = 1e-4, double atol = 1e-4, double alpha = 1.5, const int noncumulative = 10, const int adaptive=10) {
+     double alpha = 1.5, const int noncumulative = 10, const int adaptive=10) {
+   
+    
     const int ndim = lb.size();
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -36,7 +38,7 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
             }
         }
     }
-    int nevals = 0;
+  
     double Itot = 0.0;
     double sd = 0.0;
     std::vector<double> integrals;
@@ -64,9 +66,10 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
         }
         double integral_mc = std::accumulate(Jsf.begin(), Jsf.end(), 0.0) / ncalls;
         double variance_mc = (std::accumulate(Jsf.begin(), Jsf.end(), 0.0, [](double sum, double x) { return sum + x * x; }) / ncalls - integral_mc * integral_mc) / (ncalls - 1) + std::numeric_limits<double>::epsilon();
-        nevals += ncalls;
+      
         integrals.push_back(integral_mc);
         sigma_squares.push_back(variance_mc);
+        //tinh chỉnh noncumulative lần
         if (iter <= adaptive) {
             std::vector<std::vector<double>> d(nbins, std::vector<double>(ndim, 0.0));
             double ni = static_cast<double>(ncalls) / nbins;
@@ -74,6 +77,7 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
                 for (int dim = 0; dim < ndim; ++dim) {
                     d[imat[i][dim]][dim] += (Jsf[i] * Jsf[i] / ni);
                 }
+              
             }
             std::vector<std::vector<double>> dreg = d;
             for (int dim = 0; dim < ndim; ++dim) {
@@ -89,11 +93,11 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
             }
             for (int dim = 0; dim < ndim; ++dim) {
                 for (int j = 0; j < nbins; ++j) {
-                    dreg[j][dim] = std::pow((1 - dreg[j][dim]) / std::log(1 / dreg[j][dim]), alpha);
+                    dreg[j][dim] = std::pow((1 - dreg[j][dim]) / std::log(1 / (dreg[j][dim])), alpha);
                 }
             }
             std::vector<std::vector<double>> newx(nbins + 1, std::vector<double>(ndim, 0.0));
-            std::vector<std::vector<double>> newdelx(nbins, std::vector<double>(ndim, 0.0));
+         
             for (int dim = 0; dim < ndim; dim++) {
                 double Sd = 0.0;
                 double delta_d = std::accumulate(dreg.begin(), dreg.end(), 0.0, [dim](double sum, const std::vector<double>& vec) { return sum + vec[dim]; }) / nbins;
@@ -114,12 +118,13 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
             x = newx;
             for (int i = 0; i < nbins; ++i) {
                 for (int dim = 0; dim < ndim; ++dim) {
-                    newdelx[i][dim] = x[i + 1][dim] - x[i][dim];
+                    delx[i][dim] = x[i + 1][dim] - x[i][dim];
                 }
             }
-            delx = newdelx;
+       
 
         }
+       
         if(iter>noncumulative) {
             double suminversigma = std::accumulate(sigma_squares.begin() + noncumulative, sigma_squares.end(), 0.0, [](double Sum, double XX) { return Sum + 1. / XX; });
             Itot = std::inner_product(std::next(integrals.begin(), noncumulative), integrals.end(), std::next(sigma_squares.begin(), noncumulative), 0.0,
@@ -130,20 +135,19 @@ Vegas(double fxn(const std::vector<double>&), const std::vector<double> lb, cons
             for (size_t i = noncumulative; i < integrals.size(); ++i) {
                 chi_squared += (integrals[i] - Itot) * (integrals[i] - Itot) / sigma_squares[i];
             }
+           
             std::cout  << iter << "th iteration" << "\nNon-cumulative estimate = " << integral_mc << std::endl;
             std::cout << "Cumulative estimate = " << Itot << std::endl;
             std::cout << "Sd = " << sd << std::endl;
             std::cout << "Chi/ier-1 = " << chi_squared/(iter-1-noncumulative+ std::numeric_limits<double>::epsilon()) << std::endl;
         }
-        if (std::abs(sd / Itot) < rtol && std::abs(sd) < atol) {
-            std::cout << "Converged in " << nevals << " evaluations" << std::endl;
-            break;
-        }
+        
         iter++;
     }
     double chi_squared = 0.0;
     for (size_t i = noncumulative; i < integrals.size(); ++i) {
         chi_squared += (integrals[i] - Itot) * (integrals[i] - Itot) / sigma_squares[i];
     }
+   
     return VEGASResult<double, double, double, std::vector<std::vector<double>>, std::vector<std::vector<double>>>(Itot, sd, chi_squared / (iter - 2- noncumulative), x, delx);
 }
