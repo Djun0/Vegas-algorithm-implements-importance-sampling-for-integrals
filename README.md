@@ -1,3 +1,4 @@
+Thay thế tích phân
 $$
 F = \int_{a}^{b} f(x) \, dx
 $$
